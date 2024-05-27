@@ -8,21 +8,27 @@
         <version>0.0.1-SNAPSHOT</version>
         <relativePath>../xuecheng-plus-parent</relativePath>
     </parent>
-    <artifactId>xuecheng-plus-system</artifactId>
-    <name>xuecheng-plus-system</name>
-    <description>xuecheng-plus-system</description>
+    <artifactId>xuecheng-plus-media</artifactId>
+    <name>xuecheng-plus-media</name>
+    <description>xuecheng-plus-media</description>
     <packaging>pom</packaging>
 
     <modules>
-        <module>xuecheng-plus-system-api</module>
-        <module>xuecheng-plus-system-service</module>
-        <module>xuecheng-plus-system-model</module>
+        <module>xuecheng-plus-media-api</module>
+        <module>xuecheng-plus-media-service</module>
+        <module>xuecheng-plus-media-model</module>
     </modules>
 
     <dependencies>
         <dependency>
-            <groupId>com.alibaba.cloud</groupId>
-            <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
+            <groupId>io.minio</groupId>
+            <artifactId>minio</artifactId>
+            <version>8.4.3</version>
+        </dependency>
+        <dependency>
+            <groupId>com.squareup.okhttp3</groupId>
+            <artifactId>okhttp</artifactId>
+            <version>4.8.1</version>
         </dependency>
     </dependencies>
 </project>
