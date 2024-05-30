@@ -10,10 +10,12 @@ import com.xuecheng.base.model.PageParams;
 import com.xuecheng.base.model.PageResult;
 import com.xuecheng.base.model.RestResponse;
 import com.xuecheng.media.mapper.MediaFilesMapper;
+import com.xuecheng.media.mapper.MediaProcessMapper;
 import com.xuecheng.media.model.dto.QueryMediaParamsDto;
 import com.xuecheng.media.model.dto.UploadFileParamsDto;
 import com.xuecheng.media.model.dto.UploadFileResultDto;
 import com.xuecheng.media.model.po.MediaFiles;
+import com.xuecheng.media.model.po.MediaProcess;
 import com.xuecheng.media.service.MediaFileService;
 import io.minio.*;
 import io.minio.messages.DeleteError;
@@ -55,6 +57,9 @@ public class MediaFileServiceImpl implements MediaFileService {
 
     @Autowired
     MinioClient minioClient;
+
+    @Autowired
+    MediaProcessMapper mediaProcessMapper;
 
     @Autowired
     MediaFileService currentProxy;
@@ -101,7 +106,7 @@ public class MediaFileServiceImpl implements MediaFileService {
         if(extension == null) {
             extension = "";
         }
-        ContentInfo extensionMatch = ContentInfoUtil.findExtensionMatch("");
+        ContentInfo extensionMatch = ContentInfoUtil.findExtensionMatch(extension);
         String mimeType = MediaType.APPLICATION_OCTET_STREAM_VALUE;         // 通用mimeType：字节流
         if (extensionMatch != null) {
             mimeType = extensionMatch.getMimeType();
@@ -195,13 +200,32 @@ public class MediaFileServiceImpl implements MediaFileService {
             mediaFiles.setStatus("1");
             //保存文件信息到文件表
             int insert = mediaFilesMapper.insert(mediaFiles);
-            if (insert < 0) {
+            if (insert <= 0) {
                 log.error("保存文件信息到数据库失败,{}",mediaFiles.toString());
                 XueChengPlusException.cast("保存文件信息失败");
             }
             log.debug("保存文件信息到数据库成功,{}",mediaFiles.toString());
         }
+        addWaitingTask(mediaFiles);
         return mediaFiles;
+    }
+
+    public void addWaitingTask(MediaFiles mediaFiles){
+        // 通过mineType判断如果是avi视频，则写入待处理任务
+        String filename = mediaFiles.getFilename();
+        // 文件扩展名
+        String extension = filename.substring(filename.lastIndexOf("."));
+        String mimeType = getMimeType(extension);
+        if(mimeType.equals("video/x-msvideo")){
+            MediaProcess mediaProcess = new MediaProcess();
+            BeanUtils.copyProperties(mediaFiles,mediaProcess);
+            mediaProcess.setStatus("1");//未处理
+            mediaProcess.setCreateDate(LocalDateTime.now());
+            mediaProcess.setFailCount(0);//失败次数默认为0
+            // 这里老师新加的
+            mediaProcess.setUrl(null);
+            mediaProcessMapper.insert(mediaProcess);
+        }
     }
 
     @Override
