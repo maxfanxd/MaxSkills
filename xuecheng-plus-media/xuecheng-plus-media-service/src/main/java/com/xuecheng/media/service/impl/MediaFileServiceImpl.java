@@ -145,8 +145,9 @@ public class MediaFileServiceImpl implements MediaFileService {
     }
 
     // 含网络访问，事务控制会占用数据库过久，不建议上来就Transactional
+    // 如果传了objectname则按objectname进行传
     @Override
-    public UploadFileResultDto uploadFile(Long companyId, UploadFileParamsDto uploadFileParamsDto, String localFilePath) {
+    public UploadFileResultDto uploadFile(Long companyId, UploadFileParamsDto uploadFileParamsDto, String localFilePath, String objectName) {
         File file = new File(localFilePath);
         if(!file.exists()){
             XueChengPlusException.cast("文件不存在");
@@ -161,7 +162,9 @@ public class MediaFileServiceImpl implements MediaFileService {
         String defaultFolderPath = getDefaultFolderPath();
         // 文件的MD5值
         String fileMd5 = getFileMd5(file);
-        String objectName = defaultFolderPath + fileMd5 + extension;
+        if(StringUtils.isEmpty(objectName)){
+            objectName = defaultFolderPath + fileMd5 + extension;
+        }
         boolean result = addMediaFilesToMinIO(localFilePath, mimeType, bucket_mediafiles, objectName);
         if(!result){
             XueChengPlusException.cast("上传文件失败");
@@ -176,7 +179,6 @@ public class MediaFileServiceImpl implements MediaFileService {
         UploadFileResultDto uploadFileResultDto = new UploadFileResultDto();
         BeanUtils.copyProperties(mediaFiles, uploadFileResultDto);
         return uploadFileResultDto;
-
 
     }
 

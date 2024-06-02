@@ -1,18 +1,41 @@
 package com.xuecheng.content.service.jobhandler;
 
 import com.xuecheng.base.exception.XueChengPlusException;
+import com.xuecheng.content.feignclient.MediaServiceClient;
+import com.xuecheng.content.feignclient.SearchServiceClient;
+import com.xuecheng.content.mapper.CoursePublishMapper;
+import com.xuecheng.content.model.dto.CoursePreviewDto;
+import com.xuecheng.content.model.po.CoursePublish;
+import com.xuecheng.content.po.CourseIndex;
+import com.xuecheng.content.service.CoursePublishService;
 import com.xuecheng.messagesdk.model.po.MqMessage;
 import com.xuecheng.messagesdk.service.MessageProcessAbstract;
 import com.xuecheng.messagesdk.service.MqMessageService;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.AutoConfigureBefore;
+import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
+
+import java.io.File;
 
 @Slf4j
 @Component
 public class CoursePublishTask extends MessageProcessAbstract {
     //执行课程发布任务的逻辑，抛出异常说明任务执行失败
+
+    @Autowired
+    CoursePublishService coursePublishService;
+
+    @Autowired
+    SearchServiceClient searchServiceClient;
+
+    @Autowired
+    CoursePublishMapper coursePublishMapper;
+
 
     @XxlJob("CoursePublishJobHandler")
     public void coursePublishJobHandler() throws Exception {
@@ -31,7 +54,7 @@ public class CoursePublishTask extends MessageProcessAbstract {
         // 课程静态化上传到minio
         generateCourseHtml(mqMessage, courseId);
         // 向elasticsearch写索引数据
-        SaveCourseIndex(mqMessage, courseId);
+        saveCourseIndex(mqMessage, courseId);
         // 向redis写缓存
 
         // 返回true表示完成
@@ -49,13 +72,20 @@ public class CoursePublishTask extends MessageProcessAbstract {
             return ;
         }
         // 开始进行课程静态化
-        int i = 1/0;    // 制造一个异常
-        // 任务处理完成后设置任务状态为完成
+        // 生成html页面
+        File file = coursePublishService.generateCourseHtml(courseId);
+        if(file == null){
+            XueChengPlusException.cast("生成的静态页面为空");
+        }
+
+        // 将html上传到minio
+        coursePublishService.uploadCourseHtml(courseId, file);
+
         mqMessageService.completedStageOne(taskId);
 
     }
 
-    private void SaveCourseIndex(MqMessage mqMessage, long courseId) {
+    private void saveCourseIndex(MqMessage mqMessage, long courseId) {
         MqMessageService mqMessageService = this.getMqMessageService();
         // 任务幂等性判断
         Long taskId = mqMessage.getId();
@@ -66,8 +96,16 @@ public class CoursePublishTask extends MessageProcessAbstract {
             return ;
         }
         // 查询课程信息，调用搜索服务添加索引
-
-
+        CoursePreviewDto coursePreviewDto = coursePublishService.getCoursePreviewInfo(courseId);
+        // 远程调用
+        CourseIndex courseIndex = new CourseIndex();
+        CoursePublish coursePublish = coursePublishMapper.selectById(courseId);
+        BeanUtils.copyProperties(coursePublish, courseIndex);
+        Boolean add = searchServiceClient.add(courseIndex);
+        if(!add){
+            log.error("索引添加失败，courseId:{}", courseId);
+            XueChengPlusException.cast("远程调用搜索服务添加课程索引失败");
+        }
         // 完成本阶段任务
         mqMessageService.completedStageTwo(taskId);
 
