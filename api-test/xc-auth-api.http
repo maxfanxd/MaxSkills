@@ -1,0 +1,29 @@
+### 授权码模式
+### 第一步申请授权码(浏览器请求)/oauth/authorize?client_id=c1&response_type=code&scope=all&redirect_uri=http://www.51xuecheng.cn
+### 第二步申请令牌
+POST {{auth_host}}/auth/oauth/token?client_id=XcWebApp&client_secret=XcWebApp&grant_type=authorization_code&code=i4cjkt&redirect_uri=http://www.51xuecheng.cn
+
+
+### 密码模式
+POST {{auth_host}}/auth/oauth/token?client_id=XcWebApp&client_secret=XcWebApp&grant_type=password&username=zhangsan&password=123
+
+### 密码模式-JWT
+POST {{auth_host}}/auth/oauth/token?client_id=XcWebApp&client_secret=XcWebApp&grant_type=password&username=t1&password=111111
+
+### 校验JWT
+POST {{auth_host}}/auth/oauth/check_token?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOlsieHVlY2hlbmctcGx1cyJdLCJ1c2VyX25hbWUiOiJ7XCJjb21wYW55SWRcIjpcIjEyMzIxNDE0MjVcIixcImNyZWF0ZVRpbWVcIjpcIjIwMjItMDktMjhUMDg6MzI6MDNcIixcImlkXCI6XCI1MlwiLFwibmFtZVwiOlwiTeiAgeW4iFwiLFwic2V4XCI6XCIxXCIsXCJzdGF0dXNcIjpcIlwiLFwidXNlcm5hbWVcIjpcInQxXCIsXCJ1dHlwZVwiOlwiMTAxMDAyXCJ9Iiwic2NvcGUiOlsiYWxsIl0sImV4cCI6MTcxNzQyMjE5NiwiYXV0aG9yaXRpZXMiOlsidGVzdCJdLCJqdGkiOiI4MjBjMDE1MS1kMjgyLTQyYTctOGQ0NS02YTk2NmE2NmI3NmEiLCJjbGllbnRfaWQiOiJYY1dlYkFwcCJ9.D9BOoBv9fG0tkUKCXWpQRlGpgdxcA1gcs5eq4HoNQmM
+
+### 统一认证参数
+POST {{auth_host}}/auth/oauth/token?client_id=XcWebApp&client_secret=XcWebApp&grant_type=password&username={"username":"t1", "password":"111111", "authType":"password"}
+
+### 修改后的统一认证参数+密码模式
+POST {{auth_host}}/auth/oauth/token?client_id=XcWebApp&client_secret=XcWebApp&grant_type=password&username={"username":"stu1","authType":"password","password":"111111"}
+
+### 尝试nginx
+GET http://tjxt-user-t.itheima.net/api/auth/wxLogin?code=021jltml2Kaexd4Y5unl2CLoes2jltmf&state=checkcode:f478ff2e21524507a585020e6421d57a
+
+### 尝试nginx2
+GET http://localhost:8160/api/auth/wxLogin?code=021jltml2Kaexd4Y5unl2CLoes2jltmf&state=checkcode:f478ff2e21524507a585020e6421d57a
+
+### test
+GET http://localhost:63070/api/auth/wxLogin?code=021jltml2Kaexd4Y5unl2CLoes2jltmf&state=checkcode:f478ff2e21524507a585020e6421d57a
